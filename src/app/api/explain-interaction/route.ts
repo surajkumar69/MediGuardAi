@@ -53,8 +53,8 @@ Source Name: ${interaction.sourceName}`;
 
     let result = null;
     let lastError = null;
-    const MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-latest"];
-    const MAX_RETRIES = 2;
+    const MODELS = ["gemini-3.8-flash", "gemini-flash-lite-latest"];
+    const MAX_RETRIES = 1;
 
     for (const modelName of MODELS) {
       if (result) break;
@@ -64,18 +64,27 @@ Source Name: ${interaction.sourceName}`;
       while (attempt <= MAX_RETRIES) {
         try {
           console.log(`[AI Explanation API] Attempt ${attempt + 1}/${MAX_RETRIES + 1} with model ${modelName}`);
-          result = await currentModel.generateContent({
+          
+          const apiPromise = currentModel.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             systemInstruction: systemInstruction,
             generationConfig: {
               responseMimeType: "application/json",
             },
           });
+
+          let timeoutId: ReturnType<typeof setTimeout>;
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("Gemini API request timed out after 15 seconds")), 15000);
+          });
+
+          result = await Promise.race([apiPromise, timeoutPromise]);
+          clearTimeout(timeoutId!);
           break; // Success
         } catch (err) {
           lastError = err;
           const errString = String(err);
-          if (errString.includes("503") || errString.includes("UNAVAILABLE") || errString.includes("high demand") || errString.includes("500") || errString.includes("429")) {
+          if (errString.includes("503") || errString.includes("UNAVAILABLE") || errString.includes("high demand") || errString.includes("500") || errString.includes("429") || errString.includes("timed out")) {
             console.warn(`[AI Explanation API] High Demand/Timeout on ${modelName}. Retrying...`);
             if (attempt < MAX_RETRIES) {
               const delay = Math.pow(2, attempt) * 1000;

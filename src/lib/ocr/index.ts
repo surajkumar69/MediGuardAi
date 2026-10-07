@@ -48,8 +48,8 @@ RULES:
 
       console.log(`[OCR] Request Started | Size: ${fileBuffer.length} bytes | MIME: ${mimeType}`);
 
-      const MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-flash-latest'];
-      const MAX_RETRIES = 2;
+      const MODELS = ['gemini-3.8-flash', 'gemini-flash-lite-latest'];
+      const MAX_RETRIES = 1;
       let response = null;
       let lastError = null;
 
@@ -77,13 +77,15 @@ RULES:
               }
             });
 
+            // 15 second timeout to prevent the 60s serverless function from crashing
             let timeoutId: ReturnType<typeof setTimeout>;
             const timeoutPromise = new Promise<never>((_, reject) => {
-              timeoutId = setTimeout(() => reject(new Error("Gemini API request timed out after 60 seconds")), 60000);
+              timeoutId = setTimeout(() => reject(new Error("Gemini API request timed out after 15 seconds")), 15000);
             });
 
-            response = await Promise.race([apiPromise, timeoutPromise]);
+            const responseObj = await Promise.race([apiPromise, timeoutPromise]);
             clearTimeout(timeoutId!);
+            response = responseObj;
             break; // Success!
           } catch (err) {
             lastError = err;
@@ -142,3 +144,5 @@ RULES:
     return provider.extractText(fileBuffer, mimeType);
   }
 }
+
+

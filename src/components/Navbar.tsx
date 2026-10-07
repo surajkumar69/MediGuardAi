@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ShieldPlus } from "lucide-react";
-import { Button } from "./ui/button";
 
 export function Navbar() {
   return (
@@ -25,14 +24,6 @@ export function Navbar() {
             Doctor Dashboard
           </Link>
         </nav>
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" className="hidden sm:inline-flex rounded-full px-6">
-            Log In
-          </Button>
-          <Button className="rounded-full px-6 shadow-lg shadow-primary/20">
-            <Link href="/checker">Get Started</Link>
-          </Button>
-        </div>
       </div>
     </header>
   );
